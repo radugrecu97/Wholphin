@@ -37,7 +37,7 @@ jobs:
             LATEST_TAG=$(git describe --tags --match 'v*' --abbrev=0)
             VERSION_NAME=$(git describe --tags --match 'v*' --long)
           else
-            LATEST_TAG=$(git rev-list --max-parents=0 HEAD | tail -n 1)
+            LATEST_TAG=$(git rev-list --reverse -n 1 HEAD)
             VERSION_NAME="untagged-$(git rev-parse --short HEAD)"
           fi
           if [[ $BRANCH_NAME == "main" ]]; then
