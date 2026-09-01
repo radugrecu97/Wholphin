@@ -50,9 +50,13 @@ val gitTags =
 
 val gitDescribe =
     providers
-        .exec { commandLine("git", "describe", "--tags", "--long", "--match=v*") }
+        .exec {
+            commandLine("git", "describe", "--tags", "--long", "--match=v*")
+            isIgnoreExitValue = true
+        }
         .standardOutput.asText
-        .getOrElse("v0.0.0")
+        .map { it.trim().ifBlank { "v0.0.0" } }
+        .get()
 
 kotlin {
     compilerOptions {
