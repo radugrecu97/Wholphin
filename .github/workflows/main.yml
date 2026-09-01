@@ -33,8 +33,13 @@ jobs:
 
       - name: Get version names
         run: |
-          LATEST_TAG=$(git describe --tags --match 'v*' --abbrev=0)
-          VERSION_NAME=$(git describe --tags --match 'v*' --long)
+          if git describe --tags --match 'v*' --abbrev=0 >/dev/null 2>&1; then
+            LATEST_TAG=$(git describe --tags --match 'v*' --abbrev=0)
+            VERSION_NAME=$(git describe --tags --match 'v*' --long)
+          else
+            LATEST_TAG=$(git rev-list --max-parents=0 HEAD | tail -n 1)
+            VERSION_NAME="untagged-$(git rev-parse --short HEAD)"
+          fi
           if [[ $BRANCH_NAME == "main" ]]; then
             TAG_NAME="develop"
           else
