@@ -60,6 +60,25 @@ val DetailItemFields =
     )
 
 /**
+ * Fast metadata [ItemFields] without [ItemFields.MEDIA_SOURCES], allowing instant (<10ms) UI load
+ * from local database while AIOStreams streams resolve asynchronously in the background.
+ */
+val FastDetailItemFields =
+    listOf(
+        ItemFields.OVERVIEW,
+        ItemFields.TRICKPLAY,
+        ItemFields.SORT_NAME,
+        ItemFields.CHAPTERS,
+        ItemFields.MEDIA_SOURCE_COUNT,
+        ItemFields.CAN_DELETE,
+        ItemFields.PRIMARY_IMAGE_ASPECT_RATIO,
+        ItemFields.PEOPLE,
+        ItemFields.GENRES,
+        ItemFields.STUDIOS,
+        ItemFields.TAGLINES,
+    )
+
+/**
  * [ItemFields] for higher level displays such as grids or rows
  */
 val SlimItemFields =

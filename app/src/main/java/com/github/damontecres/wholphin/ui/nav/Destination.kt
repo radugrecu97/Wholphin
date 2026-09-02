@@ -91,8 +91,10 @@ sealed class Destination(
         val forceTranscoding: Boolean = false,
         val backend: PlayerBackend? = null,
         val shuffle: Boolean = false,
+        val sourceId: String? = null,
     ) : Destination(true) {
         constructor(item: BaseItem) : this(item.id, item.resumeMs)
+        constructor(item: BaseItem, sourceId: String?) : this(item.id, item.resumeMs, sourceId = sourceId)
     }
 
     @Serializable

@@ -316,7 +316,7 @@ data class BaseItemUi(
 )
 
 data class QuickDetailsData(
-    val basic: AnnotatedString,
+    val basic: AnnotatedString? = null,
     val officialRating: AnnotatedString? = null,
     val criticRating: AnnotatedString? = null,
     val communityRating: AnnotatedString? = null,

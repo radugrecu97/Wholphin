@@ -26,6 +26,8 @@ import com.github.damontecres.wholphin.services.ThemeSongPlayer
 import com.github.damontecres.wholphin.services.TrailerService
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.deleteItem
+import com.github.damontecres.wholphin.ui.DetailItemFields
+import com.github.damontecres.wholphin.ui.FastDetailItemFields
 import com.github.damontecres.wholphin.ui.ItemRowFields
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
@@ -44,33 +46,39 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import org.jellyfin.sdk.model.api.request.GetSimilarItemsRequest
+import org.jellyfin.sdk.model.extensions.ticks
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
 import java.util.UUID
+import kotlin.time.Duration
 
 @HiltViewModel(assistedFactory = MovieViewModel.Factory::class)
 class MovieViewModel
     @AssistedInject
     constructor(
         private val api: ApiClient,
-        private val seerrService: SeerrService,
-        @param:ApplicationContext private val context: Context,
-        private val navigationManager: NavigationManager,
-        val serverRepository: ServerRepository,
-        val itemPlaybackRepository: ItemPlaybackRepository,
-        val streamChoiceService: StreamChoiceService,
-        val mediaReportService: MediaReportService,
-        private val themeSongPlayer: ThemeSongPlayer,
-        private val favoriteWatchManager: FavoriteWatchManager,
-        private val peopleFavorites: PeopleFavorites,
-        private val trailerService: TrailerService,
-        private val extrasService: ExtrasService,
-        private val userPreferencesService: UserPreferencesService,
         private val backdropService: BackdropService,
+        private val extrasService: ExtrasService,
+        val itemPlaybackRepository: ItemPlaybackRepository,
         private val mediaManagementService: MediaManagementService,
+        val mediaReportService: MediaReportService,
+        val navigationManager: NavigationManager,
+        val peopleFavorites: PeopleFavorites,
+        val serverRepository: ServerRepository,
+        val streamChoiceService: StreamChoiceService,
+        private val themeSongPlayer: ThemeSongPlayer,
+        private val trailerService: TrailerService,
+        private val userPreferencesService: UserPreferencesService,
+        val favoriteWatchManager: FavoriteWatchManager,
+        val seerrService: SeerrService,
+        @param:ApplicationContext private val context: Context,
         @Assisted val itemId: UUID,
     ) : ViewModel() {
         @AssistedFactory
@@ -93,12 +101,43 @@ class MovieViewModel
         }
 
         private suspend fun getMovie(): BaseItem {
-            val item =
-                api.userLibraryApi.getItem(itemId).content.let {
-                    BaseItem(it)
-                }
-            return item
+            val items =
+                api.itemsApi.getItems(
+                    GetItemsRequest(
+                        ids = listOf(itemId),
+                        fields = FastDetailItemFields,
+                    ),
+                ).content.items.orEmpty()
+            val dto = items.firstOrNull() ?: api.userLibraryApi.getItem(itemId).content
+            return BaseItem(dto)
         }
+
+        fun loadVersions(): Job =
+            viewModelScope.launchIO {
+                _state.update { it.copy(loadingVersions = true) }
+                try {
+                    val fullItem = api.userLibraryApi.getItem(itemId).content
+                    val fullMovie = BaseItem(fullItem)
+                    val sources = fullItem.mediaSources.orEmpty()
+                    val chosenStreams =
+                        itemPlaybackRepository.getSelectedTracks(
+                            itemId,
+                            fullMovie,
+                            userPreferencesService.getCurrent(),
+                        )
+                    _state.update {
+                        it.copy(
+                            loading = DataLoadingState.Success(fullMovie),
+                            versions = sources,
+                            loadingVersions = false,
+                            chosenStreams = chosenStreams,
+                        )
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to load versions for movie %s", itemId)
+                    _state.update { it.copy(loadingVersions = false) }
+                }
+            }
 
         fun init(): Job =
             viewModelScope.launchDefault {
@@ -124,9 +163,11 @@ class MovieViewModel
                         chosenStreams = chosenStreams,
                         trailers = remoteTrailers,
                         chapters = chapters,
+                        versions = null,
                     )
                 }
                 backdropService.submit(movie)
+                loadVersions()
                 viewModelScope.launchIO {
                     trailerService.getLocalTrailers(movie).letNotEmpty { localTrailers ->
                         _state.update {
@@ -290,6 +331,22 @@ class MovieViewModel
             }
         }
 
+        fun playVersion(source: MediaSourceInfo) {
+            val movie = state.value.movie ?: return
+            val sourceId = source.id?.toUUIDOrNull()
+            if (sourceId != null) {
+                savePlayVersion(movie, sourceId)
+            }
+            val resumePosition = movie.data.userData?.playbackPositionTicks?.ticks ?: Duration.ZERO
+            navigateTo(
+                Destination.Playback(
+                    itemId = movie.id,
+                    positionMs = resumePosition.inWholeMilliseconds,
+                    sourceId = source.id,
+                ),
+            )
+        }
+
         fun deleteItem(item: BaseItem) {
             deleteItem(context, mediaManagementService, item) {
                 navigationManager.goBack()
@@ -306,6 +363,8 @@ data class MovieState(
     val similar: List<BaseItem> = emptyList(),
     val discovered: List<DiscoverItem> = emptyList(),
     val chosenStreams: ChosenStreams? = null,
+    val versions: List<MediaSourceInfo>? = null,
+    val loadingVersions: Boolean = false,
     val canDelete: Boolean = false,
 ) {
     val movie: BaseItem? = (loading as? DataLoadingState.Success<BaseItem>)?.data

@@ -17,6 +17,8 @@ import com.github.damontecres.wholphin.services.StreamChoiceService
 import com.github.damontecres.wholphin.services.ThemeSongPlayer
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.deleteItem
+import com.github.damontecres.wholphin.ui.DetailItemFields
+import com.github.damontecres.wholphin.ui.FastDetailItemFields
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.nav.Destination
@@ -37,10 +39,16 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.itemsApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.request.GetItemsRequest
+import org.jellyfin.sdk.model.extensions.ticks
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
 import java.util.UUID
+import kotlin.time.Duration
 
 @HiltViewModel(assistedFactory = EpisodeViewModel.Factory::class)
 class EpisodeViewModel
@@ -53,9 +61,9 @@ class EpisodeViewModel
         val itemPlaybackRepository: ItemPlaybackRepository,
         val streamChoiceService: StreamChoiceService,
         val mediaReportService: MediaReportService,
-        private val themeSongPlayer: ThemeSongPlayer,
         private val favoriteWatchManager: FavoriteWatchManager,
-        private val userPreferencesService: UserPreferencesService,
+        private val themeSongPlayer: ThemeSongPlayer,
+        val userPreferencesService: UserPreferencesService,
         private val backdropService: BackdropService,
         private val mediaManagementService: MediaManagementService,
         @Assisted val itemId: UUID,
@@ -84,10 +92,15 @@ class EpisodeViewModel
         private fun fetchAndSetItem() {
             viewModelScope.launchIO {
                 try {
-                    val item =
-                        api.userLibraryApi.getItem(itemId).content.let {
-                            BaseItem.from(it, api)
-                        }
+                    val items =
+                        api.itemsApi.getItems(
+                            GetItemsRequest(
+                                ids = listOf(itemId),
+                                fields = FastDetailItemFields,
+                            ),
+                        ).content.items.orEmpty()
+                    val dto = items.firstOrNull() ?: api.userLibraryApi.getItem(itemId).content
+                    val item = BaseItem(dto)
                     _state.update { it.copy(episode = DataLoadingState.Success(item)) }
                 } catch (ex: CancellationException) {
                     throw ex
@@ -98,23 +111,57 @@ class EpisodeViewModel
             }
         }
 
+        fun loadVersions(): Job =
+            viewModelScope.launchIO {
+                _state.update { it.copy(loadingVersions = true) }
+                try {
+                    val fullItem = api.userLibraryApi.getItem(itemId).content
+                    val fullEp = BaseItem(fullItem)
+                    val sources = fullItem.mediaSources.orEmpty()
+                    val chosenStreams =
+                        itemPlaybackRepository.getSelectedTracks(
+                            itemId,
+                            fullEp,
+                            userPreferencesService.getCurrent(),
+                        )
+                    _state.update {
+                        it.copy(
+                            episode = DataLoadingState.Success(fullEp),
+                            versions = sources,
+                            loadingVersions = false,
+                            chosenStreams = chosenStreams,
+                        )
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to load versions for episode %s", itemId)
+                    _state.update { it.copy(loadingVersions = false) }
+                }
+            }
+
         fun init(): Job =
             viewModelScope.launchIO {
                 try {
                     val prefs = userPreferencesService.getCurrent()
-                    val item =
-                        api.userLibraryApi.getItem(itemId).content.let {
-                            BaseItem(it)
-                        }
+                    val items =
+                        api.itemsApi.getItems(
+                            GetItemsRequest(
+                                ids = listOf(itemId),
+                                fields = FastDetailItemFields,
+                            ),
+                        ).content.items.orEmpty()
+                    val dto = items.firstOrNull() ?: api.userLibraryApi.getItem(itemId).content
+                    val item = BaseItem(dto)
                     val chosenStreams =
                         itemPlaybackRepository.getSelectedTracks(item.id, item, prefs)
                     _state.update {
                         it.copy(
                             episode = DataLoadingState.Success(item),
                             chosenStreams = chosenStreams,
+                            versions = null,
                         )
                     }
                     backdropService.submit(item)
+                    loadVersions()
                 } catch (ex: CancellationException) {
                     throw ex
                 } catch (ex: Exception) {
@@ -211,6 +258,22 @@ class EpisodeViewModel
             }
         }
 
+        fun playVersion(source: MediaSourceInfo) {
+            val ep = (state.value.episode as? DataLoadingState.Success<BaseItem>)?.data ?: return
+            val sourceId = source.id?.toUUIDOrNull()
+            if (sourceId != null) {
+                savePlayVersion(ep, sourceId)
+            }
+            val resumePosition = ep.data.userData?.playbackPositionTicks?.ticks ?: Duration.ZERO
+            navigateTo(
+                Destination.Playback(
+                    itemId = ep.id,
+                    positionMs = resumePosition.inWholeMilliseconds,
+                    sourceId = source.id,
+                ),
+            )
+        }
+
         fun deleteItem(item: BaseItem) {
             deleteItem(context, mediaManagementService, item) {
                 navigationManager.goBack()
@@ -221,4 +284,6 @@ class EpisodeViewModel
 data class EpisodeState(
     val episode: DataLoadingState<BaseItem> = DataLoadingState.Pending,
     val chosenStreams: ChosenStreams? = null,
+    val versions: List<MediaSourceInfo>? = null,
+    val loadingVersions: Boolean = false,
 )
