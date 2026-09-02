@@ -2,7 +2,10 @@ package com.github.damontecres.wholphin.ui.setup
 
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,14 +14,17 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -45,9 +51,52 @@ fun PinEntry(
     modifier: Modifier = Modifier,
 ) {
     var input by remember { mutableStateOf("") }
+    var dragX by remember { mutableFloatStateOf(0f) }
+    var dragY by remember { mutableFloatStateOf(0f) }
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier,
+        modifier =
+            modifier
+                .pointerInput(input) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (dragX < -40f) {
+                                val str = input + "L"
+                                input = str
+                                onTextChange(str)
+                            } else if (dragX > 40f) {
+                                val str = input + "R"
+                                input = str
+                                onTextChange(str)
+                            }
+                            dragX = 0f
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragX += dragAmount
+                        },
+                    )
+                }
+                .pointerInput(input) {
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            if (dragY < -40f) {
+                                val str = input + "U"
+                                input = str
+                                onTextChange(str)
+                            } else if (dragY > 40f) {
+                                val str = input + "D"
+                                input = str
+                                onTextChange(str)
+                            }
+                            dragY = 0f
+                        },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragY += dragAmount
+                        },
+                    )
+                },
     ) {
         Text(
             text = stringResource(R.string.enter_pin),
@@ -55,7 +104,14 @@ fun PinEntry(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
-        PinArrowRow(Modifier.align(Alignment.CenterHorizontally))
+        PinArrowRow(
+            onArrowClick = { dir ->
+                val str = input + dir
+                input = str
+                onTextChange(str)
+            },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
         PinEntryDots(input.length, Modifier.align(Alignment.CenterHorizontally))
 
         TextButton(
@@ -115,10 +171,52 @@ fun PinEntryCreate(
     modifier: Modifier = Modifier,
 ) {
     var input by remember { mutableStateOf("") }
+    var dragX by remember { mutableFloatStateOf(0f) }
+    var dragY by remember { mutableFloatStateOf(0f) }
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier =
             modifier
+                .pointerInput(input) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            if (dragX < -40f) {
+                                val str = input + "L"
+                                input = str
+                                onTextChange(str)
+                            } else if (dragX > 40f) {
+                                val str = input + "R"
+                                input = str
+                                onTextChange(str)
+                            }
+                            dragX = 0f
+                        },
+                        onHorizontalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragX += dragAmount
+                        },
+                    )
+                }
+                .pointerInput(input) {
+                    detectVerticalDragGestures(
+                        onDragEnd = {
+                            if (dragY < -40f) {
+                                val str = input + "U"
+                                input = str
+                                onTextChange(str)
+                            } else if (dragY > 40f) {
+                                val str = input + "D"
+                                input = str
+                                onTextChange(str)
+                            }
+                            dragY = 0f
+                        },
+                        onVerticalDrag = { change, dragAmount ->
+                            change.consume()
+                            dragY += dragAmount
+                        },
+                    )
+                }
                 .onKeyEvent {
                     if (isEnterKey(it)) {
                         onConfirm?.invoke(input)
@@ -158,7 +256,14 @@ fun PinEntryCreate(
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.align(Alignment.CenterHorizontally),
         )
-        PinArrowRow(Modifier.align(Alignment.CenterHorizontally))
+        PinArrowRow(
+            onArrowClick = { dir ->
+                val str = input + dir
+                input = str
+                onTextChange(str)
+            },
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+        )
         PinEntryDots(input.length, Modifier.align(Alignment.CenterHorizontally))
         if (onConfirm != null) {
             Text(
@@ -172,21 +277,45 @@ fun PinEntryCreate(
 }
 
 @Composable
-fun PinArrowRow(modifier: Modifier = Modifier) {
+fun PinArrowRow(
+    modifier: Modifier = Modifier,
+    onArrowClick: ((String) -> Unit)? = null,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier,
     ) {
         val arrows =
-            listOf(R.string.fa_arrow_left_long, R.string.fa_arrow_up_long, R.string.fa_arrow_right_long, R.string.fa_arrow_down_long)
-        arrows.forEach {
-            Text(
-                text = stringResource(it),
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.headlineSmall,
-                fontFamily = FontAwesome,
+            listOf(
+                R.string.fa_arrow_left_long to "L",
+                R.string.fa_arrow_up_long to "U",
+                R.string.fa_arrow_right_long to "R",
+                R.string.fa_arrow_down_long to "D",
             )
+        arrows.forEach { (iconRes, dirCode) ->
+            Box(
+                modifier =
+                    Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .then(
+                            if (onArrowClick != null) {
+                                Modifier.clickable { onArrowClick(dirCode) }
+                            } else {
+                                Modifier
+                            },
+                        )
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    text = stringResource(iconRes),
+                    color = MaterialTheme.colorScheme.onSurface,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontFamily = FontAwesome,
+                )
+            }
         }
         Text(
             text = stringResource(R.string.pin_digits_hint),

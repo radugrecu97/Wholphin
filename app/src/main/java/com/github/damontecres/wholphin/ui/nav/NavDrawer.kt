@@ -87,6 +87,7 @@ import com.github.damontecres.wholphin.ui.setup.UserIconCardImage
 import com.github.damontecres.wholphin.ui.spacedByWithFooter
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.toServerString
+import com.github.damontecres.wholphin.ui.touchClickable
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -574,7 +575,7 @@ fun NavigationDrawerScope.ProfileIcon(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     NavigationDrawerItem(
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick),
         selected = false,
         onClick = onClick,
         leadingContent = {
@@ -615,7 +616,7 @@ fun NavigationDrawerScope.IconNavItem(
 ) {
     val focused by interactionSource.collectIsFocusedAsState()
     NavigationDrawerItem(
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick),
         selected = false,
         onClick = onClick,
         leadingContent = {
@@ -690,7 +691,7 @@ fun NavigationDrawerScope.NavItem(
         }
     val focused by interactionSource.collectIsFocusedAsState()
     NavigationDrawerItem(
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick),
         selected = false,
         onClick = onClick,
         colors =

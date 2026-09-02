@@ -4,6 +4,8 @@ import android.view.KeyEvent
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -21,11 +23,13 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import com.github.damontecres.wholphin.preferences.AppThemeColors
 import com.github.damontecres.wholphin.ui.handleDPadKeyEvents
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
+import kotlin.math.roundToLong
 
 /**
  * A TV capable control for choosing a value
@@ -47,7 +51,7 @@ fun SliderBar(
         targetValue = 6.dp.times((if (isFocused) 2f else 1f)),
     )
     var currentValue by remember(value) { mutableLongStateOf(value) }
-    val percent = (currentValue - min).toFloat() / (max - min)
+    val percent = if (max > min) ((currentValue - min).toFloat() / (max - min)).coerceIn(0f, 1f) else 0f
 
     val handleSeekEventModifier =
         Modifier.handleDPadKeyEvents(
@@ -73,6 +77,30 @@ fun SliderBar(
             },
         )
 
+    val touchModifier =
+        Modifier
+            .pointerInput(min, max, interval) {
+                detectTapGestures { offset ->
+                    if (size.width > 0 && max > min) {
+                        val fraction = (offset.x / size.width).coerceIn(0f, 1f)
+                        val raw = min + (fraction * (max - min))
+                        val stepped = if (interval > 0) (raw / interval).roundToLong() * interval else raw.roundToLong()
+                        currentValue = stepped.coerceIn(min, max)
+                        onChange(currentValue)
+                    }
+                }
+            }.pointerInput(min, max, interval) {
+                detectDragGestures { change, _ ->
+                    if (size.width > 0 && max > min) {
+                        val fraction = (change.position.x / size.width).coerceIn(0f, 1f)
+                        val raw = min + (fraction * (max - min))
+                        val stepped = if (interval > 0) (raw / interval).roundToLong() * interval else raw.roundToLong()
+                        currentValue = stepped.coerceIn(min, max)
+                        onChange(currentValue)
+                    }
+                }
+            }
+
     Column(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -81,9 +109,10 @@ fun SliderBar(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(animatedIndicatorHeight)
+                    .height(animatedIndicatorHeight.coerceAtLeast(16.dp))
                     .padding(horizontal = 4.dp)
                     .then(handleSeekEventModifier)
+                    .then(touchModifier)
                     .focusable(interactionSource = interactionSource),
             onDraw = {
                 val yOffset = size.height.div(2)

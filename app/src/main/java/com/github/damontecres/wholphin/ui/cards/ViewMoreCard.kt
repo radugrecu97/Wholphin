@@ -40,6 +40,7 @@ import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.enableMarquee
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
+import com.github.damontecres.wholphin.ui.touchClickable
 import kotlinx.coroutines.delay
 
 @Composable
@@ -78,7 +79,7 @@ fun ViewMoreCard(
         }
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Card(
             modifier =

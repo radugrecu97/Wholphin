@@ -27,6 +27,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.SearchEditTextBox
 import com.github.damontecres.wholphin.ui.components.SelectedLeadingContent
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.touchClickable
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import kotlinx.coroutines.delay
@@ -103,11 +104,10 @@ fun FilterableLanguagePreference(
                 if (option is PreferredLanguageType.Divider) {
                     HorizontalDivider()
                 } else {
+                    val onClick = { onClickOption.invoke(option) }
                     ListItem(
                         selected = false,
-                        onClick = {
-                            onClickOption.invoke(option)
-                        },
+                        onClick = onClick,
                         leadingContent = {
                             SelectedLeadingContent(option == selectedOption)
                         },
@@ -136,7 +136,7 @@ fun FilterableLanguagePreference(
                                     }
                                 }
                             },
-                        modifier = Modifier.focusRequester(focusRequesters[index]),
+                        modifier = Modifier.focusRequester(focusRequesters[index]).touchClickable(onClick = onClick),
                     )
                 }
             }

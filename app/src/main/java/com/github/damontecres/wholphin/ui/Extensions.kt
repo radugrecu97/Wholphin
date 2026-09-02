@@ -8,7 +8,9 @@ import android.view.KeyEvent
 import android.widget.Toast
 import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.basicMarquee
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -112,6 +114,22 @@ fun Modifier.ifElse(
     ifTrueModifier: () -> Modifier,
     ifFalseModifier: () -> Modifier = { Modifier },
 ): Modifier = then(if (condition) ifTrueModifier.invoke() else ifFalseModifier.invoke())
+
+/**
+ * Enables touch taps (pointerInput) on TV components (Surface, Card, ListItem) which otherwise only handle D-pad key events.
+ */
+fun Modifier.touchClickable(
+    enabled: Boolean = true,
+    onLongClick: (() -> Unit)? = null,
+    onClick: () -> Unit,
+): Modifier = pointerInput(enabled, onClick, onLongClick) {
+    if (enabled) {
+        detectTapGestures(
+            onTap = { onClick() },
+            onLongPress = if (onLongClick != null) { { onLongClick() } } else null,
+        )
+    }
+}
 
 /**
  * Handles horizontal (Left & Right) D-Pad Keys and consumes the event(s) so that the focus doesn't

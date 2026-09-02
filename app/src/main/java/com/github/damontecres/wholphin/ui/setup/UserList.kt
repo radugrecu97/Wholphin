@@ -54,6 +54,7 @@ import com.github.damontecres.wholphin.data.model.JellyfinUser
 import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
+import com.github.damontecres.wholphin.ui.touchClickable
 import com.github.damontecres.wholphin.ui.components.DialogItem
 import com.github.damontecres.wholphin.ui.components.DialogPopup
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
@@ -203,7 +204,7 @@ private fun UserIconCard(
     val cardSize = Cards.serverUserCircle
 
     Column(
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick, onLongClick = onLongClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -212,7 +213,7 @@ private fun UserIconCard(
             onClick = onClick,
             onLongClick = onLongClick,
             interactionSource = interactionSource,
-            modifier = Modifier.size(cardSize),
+            modifier = Modifier.size(cardSize).touchClickable(onClick = onClick, onLongClick = onLongClick),
             shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
             colors =
                 ClickableSurfaceDefaults.colors(
@@ -372,7 +373,7 @@ private fun AddUserCard(
     val cardSize = Cards.height2x3 * 0.75f // ~120dp
 
     Column(
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp), // Increased to accommodate 20% scale
     ) {
@@ -380,7 +381,7 @@ private fun AddUserCard(
         Surface(
             onClick = onClick,
             interactionSource = interactionSource,
-            modifier = Modifier.size(cardSize),
+            modifier = Modifier.size(cardSize).touchClickable(onClick = onClick),
             shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
             colors =
                 ClickableSurfaceDefaults.colors(

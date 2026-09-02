@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.tv.material3.ListItem
+import com.github.damontecres.wholphin.ui.touchClickable
 
 @Composable
 fun ClickPreference(
@@ -26,6 +27,7 @@ fun ClickPreference(
             PreferenceSummary(summary)
         },
         interactionSource = interactionSource,
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick, onLongClick = onLongClick),
     )
 }
+

@@ -34,6 +34,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.JellyfinServer
 import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.components.CircularProgress
+import com.github.damontecres.wholphin.ui.touchClickable
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import java.util.UUID
 
@@ -122,7 +123,12 @@ fun ServerIconCard(
         }
 
     Column(
-        modifier = modifier,
+        modifier =
+            modifier.touchClickable(
+                enabled = true,
+                onLongClick = if (allowDelete) onLongClick else null,
+                onClick = onClick,
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -131,7 +137,14 @@ fun ServerIconCard(
             onClick = onClick,
             onLongClick = if (allowDelete) onLongClick else null,
             interactionSource = interactionSource,
-            modifier = Modifier.size(cardSize),
+            modifier =
+                Modifier
+                    .size(cardSize)
+                    .touchClickable(
+                        enabled = true,
+                        onLongClick = if (allowDelete) onLongClick else null,
+                        onClick = onClick,
+                    ),
             shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
             colors =
                 ClickableSurfaceDefaults.colors(
@@ -249,7 +262,7 @@ fun AddServerCard(
     val cardSize = Cards.height2x3 * 0.75f // ~120dp
 
     Column(
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(24.dp),
     ) {
@@ -260,6 +273,7 @@ fun AddServerCard(
             modifier =
                 Modifier
                     .size(cardSize)
+                    .touchClickable(onClick = onClick)
                     .testTag("add_server"),
             shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
             colors =

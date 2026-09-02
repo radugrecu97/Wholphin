@@ -46,6 +46,7 @@ import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.enableMarquee
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
+import com.github.damontecres.wholphin.ui.touchClickable
 import kotlinx.coroutines.delay
 
 @Composable
@@ -77,7 +78,7 @@ fun DiscoverItemCard(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(4.dp),
-        modifier = modifier.size(width, Dp.Unspecified),
+        modifier = modifier.size(width, Dp.Unspecified).touchClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Card(
             modifier =

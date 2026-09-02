@@ -33,6 +33,7 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.enableMarquee
+import com.github.damontecres.wholphin.ui.touchClickable
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
 
@@ -152,7 +153,7 @@ fun SeasonCard(
 
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp), // Fixed base spacing
-        modifier = modifier.size(width, height),
+        modifier = modifier.size(width, height).touchClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Card(
             modifier =

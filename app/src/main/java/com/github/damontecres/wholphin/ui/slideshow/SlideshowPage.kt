@@ -9,9 +9,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -221,6 +224,7 @@ fun SlideshowPage(
             }
 
             var longPressing by remember { mutableStateOf(false) }
+            var accumulatedPanX by remember { mutableFloatStateOf(0f) }
 
             Box(
                 modifier =
@@ -228,6 +232,55 @@ fun SlideshowPage(
                         .background(Color.Black)
                         .focusRequester(focusRequester)
                         .focusable()
+                        .pointerInput(showOverlay, showFilterDialog, isZoomed) {
+                            detectTapGestures(
+                                onTap = {
+                                    val isOverlayShowing = showOverlay || showFilterDialog
+                                    if (isOverlayShowing) {
+                                        showOverlay = false
+                                        viewModel.unpauseSlideshow()
+                                    } else {
+                                        showOverlay = true
+                                        viewModel.pauseSlideshow()
+                                    }
+                                    viewModel.pulseSlideshow()
+                                },
+                                onDoubleTap = {
+                                    if (isZoomed) {
+                                        reset(false)
+                                    } else {
+                                        zoomFactor = 2.5f
+                                    }
+                                    viewModel.pulseSlideshow()
+                                },
+                            )
+                        }
+                        .pointerInput(isZoomed, maxPanX, maxPanY) {
+                            detectTransformGestures { _, pan, zoomChange, _ ->
+                                if (zoomChange != 1f) {
+                                    zoom(zoomChange - 1f)
+                                }
+                                if (isZoomed) {
+                                    panX = (panX + pan.x).coerceIn(-maxPanX, maxPanX)
+                                    panY = (panY + pan.y).coerceIn(-maxPanY, maxPanY)
+                                } else {
+                                    accumulatedPanX += pan.x
+                                    if (accumulatedPanX < -80f) {
+                                        accumulatedPanX = 0f
+                                        if (!viewModel.nextImage()) {
+                                            Toast.makeText(context, R.string.no_more_images, Toast.LENGTH_SHORT).show()
+                                        }
+                                        viewModel.pulseSlideshow()
+                                    } else if (accumulatedPanX > 80f) {
+                                        accumulatedPanX = 0f
+                                        if (!viewModel.previousImage()) {
+                                            Toast.makeText(context, R.string.slideshow_at_beginning, Toast.LENGTH_SHORT).show()
+                                        }
+                                        viewModel.pulseSlideshow()
+                                    }
+                                }
+                            }
+                        }
                         .onKeyEvent {
                             val isOverlayShowing = showOverlay || showFilterDialog
                             var result = false

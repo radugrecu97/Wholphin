@@ -14,6 +14,7 @@ import androidx.tv.material3.ListItemDefaults
 import androidx.tv.material3.ListItemGlow
 import androidx.tv.material3.ListItemScale
 import androidx.tv.material3.ListItemShape
+import com.github.damontecres.wholphin.ui.touchClickable
 
 /**
  * Displays either a [ListItem] or [DenseListItem] based on the dense parameter
@@ -39,44 +40,47 @@ fun ListItemWrapper(
     border: ListItemBorder = ListItemDefaults.border(),
     glow: ListItemGlow = ListItemDefaults.glow(),
     interactionSource: MutableInteractionSource? = null,
-) = if (dense) {
-    DenseListItem(
-        selected = selected,
-        onClick = onClick,
-        headlineContent = headlineContent,
-        modifier = modifier,
-        enabled = enabled,
-        onLongClick = onLongClick,
-        overlineContent = overlineContent,
-        supportingContent = supportingContent,
-        leadingContent = leadingContent,
-        trailingContent = trailingContent,
-        tonalElevation = tonalElevation,
-        shape = shape,
-        colors = colors,
-        scale = scale,
-        border = border,
-        glow = glow,
-        interactionSource = interactionSource,
-    )
-} else {
-    ListItem(
-        selected = selected,
-        onClick = onClick,
-        headlineContent = headlineContent,
-        modifier = modifier,
-        enabled = enabled,
-        onLongClick = onLongClick,
-        overlineContent = overlineContent,
-        supportingContent = supportingContent,
-        leadingContent = leadingContent,
-        trailingContent = trailingContent,
-        tonalElevation = tonalElevation,
-        shape = shape,
-        colors = colors,
-        scale = scale,
-        border = border,
-        glow = glow,
-        interactionSource = interactionSource,
-    )
+) {
+    val touchModifier = modifier.touchClickable(enabled, onLongClick, onClick)
+    if (dense) {
+        DenseListItem(
+            selected = selected,
+            onClick = onClick,
+            headlineContent = headlineContent,
+            modifier = touchModifier,
+            enabled = enabled,
+            onLongClick = onLongClick,
+            overlineContent = overlineContent,
+            supportingContent = supportingContent,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            tonalElevation = tonalElevation,
+            shape = shape,
+            colors = colors,
+            scale = scale,
+            border = border,
+            glow = glow,
+            interactionSource = interactionSource,
+        )
+    } else {
+        ListItem(
+            selected = selected,
+            onClick = onClick,
+            headlineContent = headlineContent,
+            modifier = touchModifier,
+            enabled = enabled,
+            onLongClick = onLongClick,
+            overlineContent = overlineContent,
+            supportingContent = supportingContent,
+            leadingContent = leadingContent,
+            trailingContent = trailingContent,
+            tonalElevation = tonalElevation,
+            shape = shape,
+            colors = colors,
+            scale = scale,
+            border = border,
+            glow = glow,
+            interactionSource = interactionSource,
+        )
+    }
 }

@@ -11,6 +11,7 @@ import androidx.tv.material3.SwitchColors
 import androidx.tv.material3.SwitchDefaults
 import com.github.damontecres.wholphin.preferences.AppThemeColors
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
+import com.github.damontecres.wholphin.ui.touchClickable
 
 @Composable
 fun SwitchPreference(
@@ -60,7 +61,7 @@ fun SwitchPreference(
             )
         },
         interactionSource = interactionSource,
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick, onLongClick = onLongClick),
     )
 }
 

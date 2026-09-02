@@ -41,6 +41,7 @@ import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.enableMarquee
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
+import com.github.damontecres.wholphin.ui.touchClickable
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.PersonKind
@@ -97,7 +98,7 @@ fun PersonCard(
 
     Column(
         verticalArrangement = Arrangement.spacedBy(4.dp), // Fixed base spacing
-        modifier = modifier,
+        modifier = modifier.touchClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Card(
             modifier = Modifier,

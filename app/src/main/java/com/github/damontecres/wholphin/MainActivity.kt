@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.KeyEvent
+import android.view.MotionEvent
 import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.setContent
@@ -295,6 +296,17 @@ class MainActivity : AppCompatActivity() {
         } else {
             screensaverService.pulse()
             return super.dispatchKeyEvent(event)
+        }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        if (screensaverService.state.value.show) {
+            screensaverService.stop(false)
+            screensaverService.pulse()
+            return true
+        } else {
+            screensaverService.pulse()
+            return super.dispatchTouchEvent(ev)
         }
     }
 

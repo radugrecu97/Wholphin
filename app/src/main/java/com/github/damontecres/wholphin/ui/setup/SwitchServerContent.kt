@@ -57,6 +57,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.JellyfinServer
+import com.github.damontecres.wholphin.ui.touchClickable
 import com.github.damontecres.wholphin.ui.components.BasicDialog
 import com.github.damontecres.wholphin.ui.components.CircularProgress
 import com.github.damontecres.wholphin.ui.components.DialogItem
@@ -406,7 +407,9 @@ private fun AddServerDialog(
                                 onClick = {
                                     viewModel.addServer(server.url, showToast = true)
                                 },
-                                modifier = Modifier.focusRequester(focusRequester),
+                                modifier = Modifier.focusRequester(focusRequester).touchClickable {
+                                    viewModel.addServer(server.url, showToast = true)
+                                },
                             )
                         }
                     }

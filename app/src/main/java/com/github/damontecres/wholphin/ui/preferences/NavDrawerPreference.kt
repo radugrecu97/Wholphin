@@ -43,6 +43,7 @@ import com.github.damontecres.wholphin.data.ServerPreferencesDao
 import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.NavDrawerPinnedItem
 import com.github.damontecres.wholphin.data.model.NavPinType
+import com.github.damontecres.wholphin.ui.touchClickable
 import com.github.damontecres.wholphin.services.BackdropService
 import com.github.damontecres.wholphin.services.NavDrawerService
 import com.github.damontecres.wholphin.services.NavigationManager
@@ -245,7 +246,7 @@ fun NavDrawerPreferenceListItem(
                     )
                 },
                 onClick = onClick,
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.weight(1f).touchClickable(onClick = onClick),
             )
             Row(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),

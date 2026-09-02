@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.focusGroup
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
@@ -319,7 +321,14 @@ fun SearchPage(
                             .onFocusChanged { state ->
                                 isTextFieldFocused = state.isFocused
                                 if (!state.isFocused) isSearchActive = false
-                            }.onPreviewKeyEvent { event ->
+                            }
+                            .pointerInput(Unit) {
+                                detectTapGestures {
+                                    isSearchActive = true
+                                    keyboardController?.show()
+                                }
+                            }
+                            .onPreviewKeyEvent { event ->
                                 val isActivationKey =
                                     event.key in listOf(Key.DirectionCenter, Key.Enter)
                                 if (event.type == KeyEventType.KeyUp && isActivationKey && !isSearchActive) {

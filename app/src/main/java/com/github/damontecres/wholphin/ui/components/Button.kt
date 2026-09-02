@@ -34,6 +34,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.ProvideTextStyle
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.ui.touchClickable
 
 /**
  * This is a re-implementation of [androidx.tv.material3.Button] with altered sizing, padding, colors, etc
@@ -86,7 +87,7 @@ fun Button(
     content: @Composable RowScope.() -> Unit,
 ) {
     Surface(
-        modifier = modifier.semantics { role = Role.Button },
+        modifier = modifier.semantics { role = Role.Button }.touchClickable(enabled, onLongClick, onClick),
         onClick = onClick,
         onLongClick = onLongClick,
         enabled = enabled,

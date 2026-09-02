@@ -49,6 +49,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -71,6 +72,7 @@ import com.github.damontecres.wholphin.ui.playback.SimpleMediaStream
 import com.github.damontecres.wholphin.ui.playback.isDown
 import com.github.damontecres.wholphin.ui.playback.isUp
 import com.github.damontecres.wholphin.ui.roundMinutes
+import com.github.damontecres.wholphin.ui.touchClickable
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.delay
@@ -241,20 +243,31 @@ fun DialogPopup(
                 dismissOnClick = dismissOnClick,
                 elevation = elevation,
                 modifier =
-                    Modifier.onKeyEvent { event ->
-                        val code = event.nativeKeyEvent.keyCode
-                        if (event.nativeKeyEvent.action == KeyEvent.ACTION_UP &&
-                            code in
-                            setOf(
-                                KeyEvent.KEYCODE_ENTER,
-                                KeyEvent.KEYCODE_DPAD_CENTER,
-                                KeyEvent.KEYCODE_NUMPAD_ENTER,
-                            )
-                        ) {
-                            waiting = false
+                    Modifier
+                        .pointerInput(Unit) {
+                            awaitPointerEventScope {
+                                while (true) {
+                                    val event = awaitPointerEvent()
+                                    if (event.changes.any { !it.pressed }) {
+                                        waiting = false
+                                    }
+                                }
+                            }
                         }
-                        false
-                    },
+                        .onKeyEvent { event ->
+                            val code = event.nativeKeyEvent.keyCode
+                            if (event.nativeKeyEvent.action == KeyEvent.ACTION_UP &&
+                                code in
+                                setOf(
+                                    KeyEvent.KEYCODE_ENTER,
+                                    KeyEvent.KEYCODE_DPAD_CENTER,
+                                    KeyEvent.KEYCODE_NUMPAD_ENTER,
+                                )
+                            ) {
+                                waiting = false
+                            }
+                            false
+                        },
             )
         }
     }
@@ -304,15 +317,16 @@ fun DialogPopupContent(
                     is DialogItem -> {
                         val interactionSource = remember { MutableInteractionSource() }
                         val focused by interactionSource.collectIsFocusedAsState()
+                        val onClick = {
+                            if (dismissOnClick || item.dismissOnClick) {
+                                onDismissRequest.invoke()
+                            }
+                            item.onClick.invoke()
+                        }
                         ListItem(
                             selected = item.selected,
                             enabled = !waiting && item.enabled,
-                            onClick = {
-                                if (dismissOnClick || item.dismissOnClick) {
-                                    onDismissRequest.invoke()
-                                }
-                                item.onClick.invoke()
-                            },
+                            onClick = onClick,
                             headlineContent = item.headlineContent,
                             overlineContent = item.overlineContent,
                             supportingContent = item.supportingContent,
@@ -322,6 +336,7 @@ fun DialogPopupContent(
                             modifier =
                                 Modifier
                                     .focusRequester(focusRequesters[index])
+                                    .touchClickable(enabled = !waiting && item.enabled, onClick = onClick)
                                     .ifElse(
                                         index == 0,
                                         Modifier.onKeyEvent {

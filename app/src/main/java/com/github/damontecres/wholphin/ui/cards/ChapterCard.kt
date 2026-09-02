@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.roundSeconds
+import com.github.damontecres.wholphin.ui.touchClickable
 import org.jellyfin.sdk.model.api.ImageType
 
 /**
@@ -60,7 +61,7 @@ fun ChapterCard(
         }
     var width by remember { mutableStateOf(AspectRatios.WIDE * cardHeight) }
     Card(
-        modifier = modifier.height(cardHeight),
+        modifier = modifier.height(cardHeight).touchClickable(onClick = onClick, onLongClick = onLongClick),
         onClick = onClick,
         onLongClick = onLongClick,
         interactionSource = interactionSource,
