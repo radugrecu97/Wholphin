@@ -21,6 +21,8 @@ package com.github.damontecres.wholphin.ui.playback.overlay
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -28,6 +30,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -100,6 +103,12 @@ fun SteppedSeekBarImpl(
         onRight = { multiplier ->
             controllerViewState.pulseControls()
             seekProgress = (progressToUse + offset * multiplier).coerceAtMost(1f)
+            hasSeeked = true
+            seek(seekProgress)
+        },
+        onSeekPercent = { percent ->
+            controllerViewState.pulseControls()
+            seekProgress = percent.coerceIn(0f, 1f)
             hasSeeked = true
             seek(seekProgress)
         },
@@ -180,6 +189,12 @@ fun IntervalSeekBarImpl(
             hasSeeked = true
             onSeek(seekPositionMs)
         },
+        onSeekPercent = { percent ->
+            controllerViewState.pulseControls()
+            seekPositionMs = (percent * durationMs).toLong().coerceIn(0L, durationMs)
+            hasSeeked = true
+            onSeek(seekPositionMs)
+        },
         interactionSource = interactionSource,
         modifier = modifier,
     )
@@ -200,6 +215,7 @@ private fun SeekBarDisplay(
     onRight: (Int) -> Unit,
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
+    onSeekPercent: ((Float) -> Unit)? = null,
     enabled: Boolean = true,
 ) {
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
@@ -218,8 +234,31 @@ private fun SeekBarDisplay(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(animatedIndicatorHeight)
+                    .height(animatedIndicatorHeight.coerceAtLeast(16.dp))
                     .padding(horizontal = 4.dp)
+                    .pointerInput(enabled, isLtr) {
+                        if (!enabled || onSeekPercent == null) return@pointerInput
+                        detectTapGestures { offset ->
+                            val percent = if (isLtr) {
+                                (offset.x / size.width.toFloat()).coerceIn(0f, 1f)
+                            } else {
+                                (1f - offset.x / size.width.toFloat()).coerceIn(0f, 1f)
+                            }
+                            onSeekPercent(percent)
+                        }
+                    }
+                    .pointerInput(enabled, isLtr) {
+                        if (!enabled || onSeekPercent == null) return@pointerInput
+                        detectHorizontalDragGestures { change, _ ->
+                            change.consume()
+                            val percent = if (isLtr) {
+                                (change.position.x / size.width.toFloat()).coerceIn(0f, 1f)
+                            } else {
+                                (1f - change.position.x / size.width.toFloat()).coerceIn(0f, 1f)
+                            }
+                            onSeekPercent(percent)
+                        }
+                    }
                     .onPreviewKeyEvent { event ->
                         if (!isDpadLeft(event) && !isDpadRight(event)) {
                             Timber.v("Ignoring %s", event)

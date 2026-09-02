@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntSize
@@ -58,6 +59,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.children
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.github.damontecres.wholphin.ui.playback.overlay.PlaybackGestureHudOverlay
+import com.github.damontecres.wholphin.ui.playback.overlay.playbackTouchGestures
+import com.github.damontecres.wholphin.ui.playback.overlay.rememberPlaybackTouchState
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.SubtitleView
@@ -324,6 +328,19 @@ fun PlaybackPageContent(
         }
     }
 
+    val touchState = rememberPlaybackTouchState()
+    val context = LocalContext.current
+    val seekBackDuration = preferences.appPreferences.playbackPreferences.skipBackMs.milliseconds
+    val seekForwardDuration = preferences.appPreferences.playbackPreferences.skipForwardMs.milliseconds
+
+    val onSingleTap: () -> Unit = {
+        if (controllerViewState.controlsVisible) {
+            controllerViewState.hideControls()
+        } else {
+            controllerViewState.showControls()
+        }
+    }
+
     val showSegment =
         state.currentSegment?.interacted == false &&
             state.nextUp == null && !controllerViewState.controlsVisible && skipIndicatorDuration == 0L
@@ -341,6 +358,15 @@ fun PlaybackPageContent(
                 Modifier
                     .fillMaxSize(playerSize)
                     .align(Alignment.TopCenter)
+                    .playbackTouchGestures(
+                        player = player,
+                        touchState = touchState,
+                        seekBackDuration = seekBackDuration,
+                        seekForwardDuration = seekForwardDuration,
+                        onSingleTap = onSingleTap,
+                        onInteraction = viewModel::reportInteraction,
+                        context = context,
+                    )
                     .onKeyEvent(keyHandler::onKeyEvent)
                     .focusRequester(focusRequester)
                     .focusable(),
@@ -353,6 +379,10 @@ fun PlaybackPageContent(
                     scaledModifier.onSizeChanged {
                         playerSurfaceSize = it
                     },
+            )
+            PlaybackGestureHudOverlay(
+                touchState = touchState,
+                player = player,
             )
             if (presentationState.coverSurface) {
                 Box(

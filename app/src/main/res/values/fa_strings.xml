@@ -57,4 +57,8 @@
     <string name="fa_repeat" translatable="false">&#xf363;</string>
     <string name="fa_compact_disc" translatable="false">&#xf51f;</string>
     <string name="fa_xmark" translatable="false">&#xf00d;</string>
+    <string name="fa_sun" translatable="false">&#xf185;</string>
+    <string name="fa_volume_xmark" translatable="false">&#xf6a9;</string>
+    <string name="fa_forward" translatable="false">&#xf04e;</string>
+    <string name="fa_backward" translatable="false">&#xf04a;</string>
 </resources>

@@ -31,6 +31,7 @@ import com.github.damontecres.wholphin.data.ItemPlaybackRepository
 import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.Chapter
+import com.github.damontecres.wholphin.data.model.ItemPlayback
 import com.github.damontecres.wholphin.data.model.Playlist
 import com.github.damontecres.wholphin.data.model.PlaylistItem
 import com.github.damontecres.wholphin.data.model.TrackIndex
@@ -464,18 +465,34 @@ class PlaybackViewModel
                 this@PlaybackViewModel.itemId = item.id
 
                 val isLiveTv = item.type == BaseItemKind.TV_CHANNEL
-                val base = item.data
+                val directSourceId = (destination as? Destination.Playback)?.sourceId?.toUUIDOrNull()
+                if (directSourceId != null) {
+                    itemPlaybackRepository.savePlayVersion(item.id, directSourceId)
+                }
+
+                var currentItem = item
+                var base = currentItem.data
+                if (base.mediaSources.isNullOrEmpty() && !isLiveTv) {
+                    try {
+                        val fullItem = api.userLibraryApi.getItem(base.id).content
+                        currentItem = BaseItem(fullItem)
+                        base = currentItem.data
+                    } catch (e: Exception) {
+                        Timber.w(e, "Could not fetch full item for playback")
+                    }
+                }
 
                 // Use the provided playback parameters or else check if the database has some
                 val itemPlayback =
                     serverRepository.currentUser?.let { user ->
-                        itemPlaybackDao.getItem(user, base.id)?.let {
-                            Timber.v("Fetched itemPlayback from DB: %s", it)
-                            if (it.sourceId != null) {
-                                it
-                            } else {
-                                null
-                            }
+                        val saved = itemPlaybackDao.getItem(user, base.id)
+                        if (directSourceId != null) {
+                            (saved ?: ItemPlayback(userId = user.rowId, itemId = base.id)).copy(sourceId = directSourceId)
+                        } else if (saved?.sourceId != null) {
+                            Timber.v("Fetched itemPlayback from DB: %s", saved)
+                            saved
+                        } else {
+                            null
                         }
                     }
                 val mediaSource =
@@ -585,11 +602,11 @@ class PlaybackViewModel
                 }
                 withContext(WholphinDispatchers.Main) {
                     changeStreams(
-                        item = item,
+                        item = currentItem,
                         audioIndex = audioIndex,
                         subtitleIndex = subtitleIndex,
                         positionMs = if (positionMs > 0) positionMs else C.TIME_UNSET,
-                        sourceId = mediaSource?.id,
+                        sourceId = mediaSource?.id ?: directSourceId?.toString() ?: itemPlayback?.sourceId?.toString(),
                         enableDirectPlay = !forceTranscoding,
                         enableDirectStream = !forceTranscoding,
                     )

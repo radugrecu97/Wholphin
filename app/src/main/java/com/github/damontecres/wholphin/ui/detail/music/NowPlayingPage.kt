@@ -15,6 +15,8 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,11 +27,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -50,6 +54,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.tv.material3.Button
 import androidx.tv.material3.MaterialTheme
@@ -183,6 +188,13 @@ fun NowPlayingPage(
             modifier =
                 Modifier
                     .fillMaxSize()
+                    .pointerInput(Unit) {
+                        detectTapGestures {
+                            if (!controllerViewState.controlsVisible) {
+                                controllerViewState.showControls()
+                            }
+                        }
+                    }
                     .onPreviewKeyEvent { key ->
                         if (!controllerViewState.controlsVisible &&
                             key.type == KeyEventType.KeyUp &&
@@ -222,10 +234,35 @@ fun NowPlayingPage(
                         Modifier
                             .padding(32.dp),
                 ) {
+                    var dragAccumulator by remember { mutableFloatStateOf(0f) }
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
-                        modifier = Modifier.fillMaxWidth(.5f),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth(.5f)
+                                .pointerInput(player) {
+                                    detectHorizontalDragGestures(
+                                        onDragEnd = {
+                                            if (dragAccumulator < -60f) {
+                                                if (player.isCommandAvailable(Player.COMMAND_SEEK_TO_NEXT)) player.seekToNext()
+                                            } else if (dragAccumulator > 60f) {
+                                                if (player.isCommandAvailable(Player.COMMAND_SEEK_TO_PREVIOUS)) player.seekToPrevious()
+                                            }
+                                            dragAccumulator = 0f
+                                        },
+                                        onHorizontalDrag = { change, dragAmount ->
+                                            change.consume()
+                                            dragAccumulator += dragAmount
+                                        },
+                                    )
+                                }
+                                .pointerInput(player) {
+                                    detectTapGestures {
+                                        if (player.isPlaying) player.pause() else player.play()
+                                        controllerViewState.pulseControls()
+                                    }
+                                },
                     ) {
                         AsyncImage(
                             contentDescription = null,
