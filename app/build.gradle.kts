@@ -43,19 +43,26 @@ val isBuildingBundle =
     }
 
 val gitTags =
-    providers
-        .exec { commandLine("git", "tag", "--list", "v*", "p*") }
-        .standardOutput.asText
-        .get()
+    runCatching {
+        providers
+            .exec {
+                commandLine("git", "tag", "--list", "v*", "p*")
+                isIgnoreExitValue = true
+            }
+            .standardOutput.asText
+            .getOrElse("")
+    }.getOrElse { "" }
 
 val gitDescribe =
-    providers
-        .exec {
-            commandLine("git", "describe", "--tags", "--long", "--match=v*")
-            isIgnoreExitValue = true
-        }.standardOutput.asText
-        .map { it.trim().ifBlank { "v0.0.0" } }
-        .get()
+    runCatching {
+        providers
+            .exec {
+                commandLine("git", "describe", "--tags", "--long", "--match=v*")
+                isIgnoreExitValue = true
+            }
+            .standardOutput.asText
+            .getOrElse("v0.0.0")
+    }.getOrElse { "v0.0.0" }
 
 kotlin {
     compilerOptions {
