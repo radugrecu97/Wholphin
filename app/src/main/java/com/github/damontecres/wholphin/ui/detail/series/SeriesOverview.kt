@@ -121,10 +121,7 @@ fun SeriesOverview(
                 onSendMediaInfo = viewModel.mediaReportService::sendReportFor,
                 onDeleteItem = viewModel::deleteItem,
                 onChooseVersion = { item, source ->
-                    viewModel.savePlayVersion(
-                        item,
-                        source.id!!.toUUID(),
-                    )
+                    viewModel.playEpisodeVersion(item, source)
                 },
                 onChooseTracks = { result ->
                     viewModel.saveTrackSelection(
@@ -209,6 +206,7 @@ fun SeriesOverview(
                 extrasRowFocusRequester = extrasRowFocusRequester,
                 onChangeSeason = { index ->
                     if (index != position.seasonTabIndex) {
+                        viewModel.closeEpisodeVersions()
                         state.seasons.getOrNull(index)?.let { season ->
                             viewModel.loadEpisodes(season.id)
                             viewModel.position.update {
@@ -311,6 +309,11 @@ fun SeriesOverview(
                 canDelete = { viewModel.canDelete(it, preferences.appPreferences) },
                 onConfirmDelete = viewModel::deleteItem,
                 onChooseVersion = contextActions.onChooseVersion,
+                episodeVersions = state.episodeVersions,
+                loadingEpisodeVersions = state.loadingEpisodeVersions,
+                activeVersionEpisodeId = state.activeVersionEpisodeId,
+                onOpenEpisodeVersions = viewModel::openEpisodeVersions,
+                onCloseEpisodeVersions = viewModel::closeEpisodeVersions,
                 modifier = modifier,
             )
         }

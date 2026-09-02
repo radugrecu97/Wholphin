@@ -163,10 +163,14 @@
     <string name="unknown">Unknown</string>
     <string name="updates">Updates</string>
     <string name="version">Version</string>
+    <string name="versions">Versions</string>
+    <string name="loading_versions">Loading versions…</string>
+    <string name="selected_version">Selected</string>
+    <string name="no_versions">No versions available</string>
     <string name="video_scale">Video Scale</string>
     <string name="video">Video</string>
     <string name="videos">Videos</string>
-    <string name="watch_live">Watch live</string>g
+    <string name="watch_live">Watch live</string>
     <plurals name="years_old">
         <item quantity="zero">%1$d years old</item>
         <item quantity="one">%1$d year old</item>
@@ -915,4 +919,10 @@
     <string name="dim_screen">Dim screen</string>
     <string name="photo_albums">Photo albums</string>
     <string name="no_favorites_found">No favorites found!</string>
+    <string name="version_font_size">Version details font size</string>
+    <string name="version_font_size_summary">Adjust font size for stream details in the versions carousel</string>
+    <string name="show_stream_tags_in_synopsis">Show stream tags in synopsis</string>
+    <string name="show_stream_tags_in_synopsis_summary">Show audio channels and video resolution badges under the title</string>
+    <string name="tab_aiostreams">AIOStreams</string>
+    <string name="tab_local">Local</string>
 </resources>

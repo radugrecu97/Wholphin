@@ -30,6 +30,7 @@ import com.github.damontecres.wholphin.data.ChosenStreams
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.ui.RequestOrRestoreFocus
+import com.github.damontecres.wholphin.ui.cards.VersionRow
 import com.github.damontecres.wholphin.ui.components.ContextMenu
 import com.github.damontecres.wholphin.ui.components.ContextMenuActions
 import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
@@ -170,7 +171,8 @@ fun EpisodeDetails(
                 },
                 canDelete = canDelete,
                 onConfirmDelete = { viewModel.deleteItem(ep) },
-                onChooseVersion = { contextActions.onChooseVersion.invoke(ep, it) },
+                onChooseVersion = { viewModel.playVersion(it) },
+                state = state,
                 modifier = modifier,
             )
         }
@@ -228,6 +230,7 @@ fun EpisodeDetailsContent(
     canDelete: Boolean,
     onConfirmDelete: () -> Unit,
     onChooseVersion: (MediaSourceInfo) -> Unit,
+    state: EpisodeState,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -288,19 +291,23 @@ fun EpisodeDetailsContent(
                         trailerOnClick = {},
                         canDelete = canDelete,
                         onConfirmDelete = onConfirmDelete,
-                        chooseVersionParams =
-                            remember(chosenStreams, ep, onChooseVersion) {
-                                ChooseVersionParams(
-                                    chosenStreams = chosenStreams,
-                                    mediaSources = ep.data.mediaSources.orEmpty(),
-                                    onChooseVersion = onChooseVersion,
-                                )
-                            },
+                        chooseVersionParams = null,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp)
                                 .focusRequester(focusRequesters[HEADER_ROW]),
+                    )
+                    VersionRow(
+                        sources = state.versions,
+                        selectedSourceId = chosenStreams?.source?.id,
+                        isLoading = state.loadingVersions,
+                        preferences = preferences,
+                        onSelectVersion = onChooseVersion,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
                     )
                 }
             }

@@ -27,6 +27,7 @@ import com.github.damontecres.wholphin.services.ThemeSongPlayer
 import com.github.damontecres.wholphin.services.TrailerService
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.deleteItem
+import com.github.damontecres.wholphin.ui.DetailItemFields
 import com.github.damontecres.wholphin.ui.ItemRowFields
 import com.github.damontecres.wholphin.ui.equalsNotNull
 import com.github.damontecres.wholphin.ui.gt
@@ -45,6 +46,10 @@ import com.github.damontecres.wholphin.util.GetItemsRequestHandler
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import com.github.damontecres.wholphin.util.successValue
 import com.google.common.cache.CacheBuilder
+import org.jellyfin.sdk.model.api.MediaSourceInfo
+import org.jellyfin.sdk.model.extensions.ticks
+import org.jellyfin.sdk.model.serializer.toUUIDOrNull
+import kotlin.time.Duration
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -74,6 +79,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ItemFields
 import org.jellyfin.sdk.model.api.ItemSortBy
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.PersonKind
 import org.jellyfin.sdk.model.api.SortOrder
 import org.jellyfin.sdk.model.api.request.GetEpisodesRequest
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
@@ -525,14 +531,82 @@ class SeriesViewModel
             chosenStreamsJob?.cancel()
             chosenStreamsJob =
                 viewModelScope.launchIO {
+                    val cachedSources = _state.value.episodeVersions[itemId]
+                    val effectiveItem = if (cachedSources != null) {
+                        BaseItem(item.data.copy(mediaSources = cachedSources))
+                    } else {
+                        item
+                    }
                     val result =
                         itemPlaybackRepository.getSelectedTracks(
                             itemId,
-                            item,
+                            effectiveItem,
                             userPreferencesService.getCurrent(),
                         )
                     _state.update { it.copy(chosenStreams = result) }
                 }
+        }
+
+        fun openEpisodeVersions(episode: BaseItem) {
+            _state.update { it.copy(activeVersionEpisodeId = episode.id) }
+            loadEpisodeVersions(episode.id, episode)
+        }
+
+        fun closeEpisodeVersions() {
+            _state.update { it.copy(activeVersionEpisodeId = null) }
+        }
+
+        fun loadEpisodeVersions(
+            itemId: UUID,
+            item: BaseItem,
+        ) {
+            val cachedSources = _state.value.episodeVersions[itemId]
+            if (cachedSources != null) return
+
+            viewModelScope.launchIO {
+                _state.update { it.copy(loadingEpisodeVersions = it.loadingEpisodeVersions + itemId) }
+                try {
+                    val fullItem = api.userLibraryApi.getItem(itemId).content
+                    val sources = fullItem.mediaSources.orEmpty()
+                    val fullBaseItem = BaseItem(fullItem)
+                    val updatedChosen =
+                        itemPlaybackRepository.getSelectedTracks(
+                            itemId,
+                            fullBaseItem,
+                            userPreferencesService.getCurrent(),
+                        )
+                    _state.update {
+                        it.copy(
+                            episodeVersions = it.episodeVersions + (itemId to sources),
+                            loadingEpisodeVersions = it.loadingEpisodeVersions - itemId,
+                            chosenStreams = updatedChosen,
+                        )
+                    }
+                } catch (e: Exception) {
+                    Timber.w(e, "Failed to fetch media sources for episode %s", itemId)
+                    _state.update {
+                        it.copy(loadingEpisodeVersions = it.loadingEpisodeVersions - itemId)
+                    }
+                }
+            }
+        }
+
+        fun playEpisodeVersion(
+            episode: BaseItem,
+            source: MediaSourceInfo,
+        ) {
+            val sourceId = source.id?.toUUIDOrNull()
+            if (sourceId != null) {
+                savePlayVersion(episode, sourceId)
+            }
+            val resumePosition = episode.data.userData?.playbackPositionTicks?.ticks ?: Duration.ZERO
+            navigateTo(
+                Destination.Playback(
+                    itemId = episode.id,
+                    positionMs = resumePosition.inWholeMilliseconds,
+                    sourceId = source.id,
+                ),
+            )
         }
 
         fun savePlayVersion(
@@ -839,4 +913,7 @@ data class SeriesState(
     val discovered: List<DiscoverItem> = emptyList(),
     val discoverSeries: DiscoverItem? = null,
     val chosenStreams: ChosenStreams? = null,
+    val episodeVersions: Map<UUID, List<MediaSourceInfo>> = emptyMap(),
+    val loadingEpisodeVersions: Set<UUID> = emptySet(),
+    val activeVersionEpisodeId: UUID? = null,
 )

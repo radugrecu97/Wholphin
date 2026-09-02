@@ -55,14 +55,7 @@ fun FocusedEpisodeFooter(
             trailerOnClick = {},
             canDelete = canDelete,
             onConfirmDelete = onConfirmDelete,
-            chooseVersionParams =
-                remember(chosenStreams, ep, onChooseVersion) {
-                    ChooseVersionParams(
-                        chosenStreams = chosenStreams,
-                        mediaSources = ep.data.mediaSources.orEmpty(),
-                        onChooseVersion = onChooseVersion,
-                    )
-                },
+            chooseVersionParams = null,
             modifier = Modifier.fillMaxWidth(),
         )
     }

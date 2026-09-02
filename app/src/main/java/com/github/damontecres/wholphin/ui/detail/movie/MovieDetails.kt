@@ -42,6 +42,7 @@ import com.github.damontecres.wholphin.ui.cards.ExtrasRow
 import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.cards.PersonRow
 import com.github.damontecres.wholphin.ui.cards.SeasonCard
+import com.github.damontecres.wholphin.ui.cards.VersionRow
 import com.github.damontecres.wholphin.ui.components.ContextMenu
 import com.github.damontecres.wholphin.ui.components.ContextMenuActions
 import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
@@ -235,7 +236,7 @@ fun MovieDetails(
                 },
                 canDelete = state.canDelete,
                 onConfirmDelete = { state.movie?.let { viewModel.deleteItem(it) } },
-                onChooseVersion = { contextActions.onChooseVersion.invoke(movie, it) },
+                onChooseVersion = { viewModel.playVersion(it) },
                 modifier = modifier,
             )
         }
@@ -371,19 +372,23 @@ fun MovieDetailsContent(
                         },
                         canDelete = canDelete,
                         onConfirmDelete = onConfirmDelete,
-                        chooseVersionParams =
-                            remember(state.chosenStreams, movie, onChooseVersion) {
-                                ChooseVersionParams(
-                                    chosenStreams = state.chosenStreams,
-                                    mediaSources = movie.data.mediaSources.orEmpty(),
-                                    onChooseVersion = onChooseVersion,
-                                )
-                            },
+                        chooseVersionParams = null,
                         modifier =
                             Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp)
                                 .focusRequester(focusRequesters[HEADER_ROW]),
+                    )
+                    VersionRow(
+                        sources = state.versions,
+                        selectedSourceId = state.chosenStreams?.source?.id,
+                        isLoading = state.loadingVersions,
+                        preferences = preferences,
+                        onSelectVersion = onChooseVersion,
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
                     )
                 }
             }

@@ -169,4 +169,65 @@ object StreamFormatting {
         }
         return name
     }
+
+    private val AIOSTREAMS_SIGNATURES =
+        listOf(
+            "☁️", "⚡", "🎟️", "🎥", "📺", "🎞️", "🎧", "🔊", "📁", "📣",
+            "[Torrentio]", "[AIOStreams]", "[MediaFusion]", "[EasyDebrid]",
+            "[DebridLink]", "[Torbox]", "[RealDebrid]", "[Premiumize]",
+            "/remux/",
+        )
+
+    /**
+     * Determines whether a [MediaSourceInfo] represents a local file rather than an AIOStreams/debrid stream.
+     */
+    fun isLocalSource(source: org.jellyfin.sdk.model.api.MediaSourceInfo): Boolean {
+        val name = source.name.orEmpty()
+        val path = source.path.orEmpty()
+
+        if (AIOSTREAMS_SIGNATURES.any { name.contains(it) || path.contains(it) }) {
+            return false
+        }
+
+        if (source.isRemote == true) {
+            return false
+        }
+
+        if (path.startsWith("/storage") ||
+            path.startsWith("/media") ||
+            path.startsWith("/data") ||
+            path.startsWith("/mnt") ||
+            path.startsWith("file:") ||
+            path.startsWith("content:") ||
+            (path.contains('/') && !path.startsWith("http://") && !path.startsWith("https://"))
+        ) {
+            return true
+        }
+
+        return source.type == org.jellyfin.sdk.model.api.MediaSourceType.DEFAULT &&
+            source.protocol == org.jellyfin.sdk.model.api.MediaProtocol.FILE
+    }
+
+    /**
+     * Gets the display title for a [MediaSourceInfo].
+     * For local files, returns the clean filename.
+     * For AIOStreams, returns the full feed title.
+     */
+    fun getDisplayTitle(
+        source: org.jellyfin.sdk.model.api.MediaSourceInfo,
+        isLocal: Boolean = isLocalSource(source),
+    ): String {
+        return if (isLocal) {
+            val path = source.path.orEmpty()
+            if (path.isNotBlank() && path.contains('/')) {
+                path.substringAfterLast('/')
+            } else if (path.isNotBlank() && path.contains('\\')) {
+                path.substringAfterLast('\\')
+            } else {
+                source.name ?: source.id ?: "Local File"
+            }
+        } else {
+            source.name ?: source.path ?: source.id ?: "Stream"
+        }
+    }
 }
